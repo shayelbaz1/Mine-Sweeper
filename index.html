@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="css/style.css">
+    <title>Mine Sweeper</title>
+</head>
+
+<body onload="init(4,2)">
+    <div class="white-box">
+        <h1>Mine Sweeper</h1>
+        <div>
+            <button class="easy button3" onclick="init(4,2)">16</button>
+            <button class="hard button3" onclick="init(8,12)">25</button>
+            <button class="extreme button3" onclick="init(12,30)">36</button>
+        </div>
+        <h2 class="timer">000</h2>
+        <div class="board-container"></div>
+
+    </div>
+    <script src="js/util.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
+</html>
