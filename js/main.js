@@ -2,10 +2,17 @@
 const BOMB = '💣';
 const FLAG = '🎌';
 const EMPTY = "";
+const LIVE = "❤️"
+const NORMAL = "😃";
+const LOSE = "🤯";
+const WIN = "😎";
+
 
 var intId_Timer
 var gElH1 = document.querySelector('h1')
 var gElTimer = document.querySelector('.timer')
+var gElLives = document.querySelector('.lives')
+var gElSmile = document.querySelector('.smile')
 // The Model
 // var gIsTimerOn
 var gBoard;
@@ -16,45 +23,109 @@ var gGame;
 function init(size, mines) {
     reset(size, mines)
     gBoard = createBoard();
-    addMines()
-    setMinesNegsCount()
     renderBoard(gBoard, '.board-container');
 }
 
 function reset(size, mines) {
+    clearInterval(intId_Timer)
     gGame = {
         isOn: false,
+        isTimerOn: false,
         shownCount: 0,
         markedCount: 0,
-        secsPassed: 0,
+        secs: 0,
         gMinesLocations: [],
+        lives: [LIVE, LIVE, LIVE],
         finish: false
     }
     gLevel = {
         SIZE: size,
         MINES: mines
     }
+
     gElH1.classList.remove("lose", "win")
     gElH1.innerText = "Mine Sweeper"
+    gElLives.innerText = ""
+    gGame.lives.forEach(LIVE => { gElLives.innerText += LIVE })
     gElTimer.innerText = `000`
+    gElSmile.innerHTML = `<button onclick="init(${size},${mines})">${NORMAL}</button>`
+}
 
+function cellClicked(elTd, cellI, cellJ, event) {
+    if (gGame.finish) return
+    //context menu Is disabled
+    window.oncontextmenu = (e) => {
+        e.preventDefault();
+    }
+    var cell = gBoard[cellI][cellJ]
+    console.log('cell:', cell)
 
+    if (!gGame.isTimerOn) startTimer()
+
+    //if 2 only timer start but game not started yet
+    if (!gGame.isOn) {
+        if (event.button === 2) {
+            addFlag(cell, cellI, cellJ)
+            return
+        } else if (event.button === 0) {
+            gGame.isOn = true
+            addMines(cellI, cellJ)
+            setMinesNegsCount()
+        }
+
+    }
+
+    var bombCountNegs = cell.minesAroundCount
+
+    if (event.button === 0) {
+        if (!cell.isMarked && !cell.isShown) {
+            cell.isShown = true
+            if (bombCountNegs !== 0 && !cell.isMine) {
+                elTd.innerText = bombCountNegs;
+                gGame.shownCount++
+
+            } else if (cell.isMine) {
+                //for each cell.mine in the gBoard elTd.innerText=BOMB
+                gGame.lives.pop()
+                gElLives.innerText = ""
+                gGame.lives.forEach(LIVE => { gElLives.innerText += LIVE })
+                elTd.innerText = BOMB
+                gGame.shownCount++
+                if (gGame.lives.length === 0) {
+                    var elSmileButton = document.querySelector('.smile button')
+                    elSmileButton.innerText = LOSE
+                    console.log('elSmile:', elSmileButton.innerText)
+                    showAllBombs(elTd)
+                }
+
+            } else if (bombCountNegs === 0) {
+                elTd.innerText = EMPTY
+                gGame.shownCount++
+                var negs = getAllNegs(cellI, cellJ)
+                expandShown(negs)
+
+            }
+        }
+    } else if (event.button === 2) {
+        if (cell.isShown) return
+        addFlag(cell, cellI, cellJ)
+    }
+    checkGameOver()
 }
 
 function startTimer() {
-    gGame.isOn = true
 
-    var sec = gGame.secsPassed
+    gGame.isTimerOn = true
 
     intId_Timer = setInterval(function () {
-        sec++
-        if (sec < 10) {
-            gElTimer.innerText = `00${sec}`
-        } else if (sec >= 10 && sec <= 99) {
-            gElTimer.innerText = `0${sec}`
-        } else if (sec >= 100 && sec < 999) {
-            gElTimer.innerText = `${sec}`
-        } else if (sec === 999) {
+        gGame.secs++
+        if (gGame.secs < 10) {
+            gElTimer.innerText = `00${gGame.secs}`
+        } else if (gGame.secs >= 10 && gGame.secs <= 99) {
+            gElTimer.innerText = `0${gGame.secs}`
+        } else if (gGame.secs >= 100 && gGame.secs < 999) {
+            gElTimer.innerText = `${gGame.secs}`
+        } else if (gGame.secs === 999) {
             gElTimer.innerText = `999`
             clearInterval(intId_Timer)
         }
@@ -82,28 +153,41 @@ function createBoard() {
     return board;
 }
 
-function addMines() {
+
+
+function addMines(cellI, cellJ) {
+
     for (let i = 0; i < gLevel.MINES; i++) {
-        addMine()
+        addMine(cellI, cellJ)
     }
 }
 
-function addMine() {
+function addMine(cellI, cellJ) {
+
     //empty places array
     var emptys = [];
     for (let i = 0; i < gBoard.length; i++) {
         for (let j = 0; j < gBoard[i].length; j++) {
             var cell = gBoard[i][j];
-            if (!cell.isMine) {
-                emptys.push({ i: i, j: j });
-            }
+            if (cell.isMine) continue
+            if (cellI === i && cellJ === j) continue
+            emptys.push({ i: i, j: j });
+
         }
     }
     var randomIdx = getRandomIntInclusive(0, emptys.length - 1);
     var location = emptys[randomIdx];
 
+    var elButton = document.querySelector(`.cell${location.i}-${location.j} button`)
+    elButton.style.backgroundColor = "yellow";
+
     gBoard[location.i][location.j].isMine = true;
     gGame.gMinesLocations.push(location)
+
+    if (gBoard[location.i][location.j].isMine && gBoard[location.i][location.j].isMarked) {
+        gGame.markedCount++
+    }
+
 }
 
 function renderBoard(mat, selector) {
@@ -113,9 +197,9 @@ function renderBoard(mat, selector) {
         for (var j = 0; j < mat[0].length; j++) {
             var cell = mat[i][j];
 
-            console.log('Show where is the Bomb');
-            cell = cell.isMine ? BOMB : EMPTY;
-            // cell = EMPTY;
+            // console.log('Show where is the Bomb');
+            // cell = cell.isMine ? BOMB : EMPTY;
+            cell = EMPTY;
             var className = 'cell cell' + i + '-' + j;
             strHTML += `<td 
             class="${className}"
@@ -165,51 +249,21 @@ function getAllNegs(cellI, cellJ) {
     return negs;
 }
 
-function cellClicked(elTd, cellI, cellJ, event) {
-    if (gGame.finish) return
-    //context menu Is disabled
-    window.oncontextmenu = (e) => {
-        e.preventDefault();
-    }
-
-    if (!gGame.isOn) startTimer()
-
-    var cell = gBoard[cellI][cellJ]
-    var bombCountNegs = cell.minesAroundCount
-
-    if (event.button === 0) {
-        if (!cell.isMarked && !cell.isShown) {
-            cell.isShown = true
-            if (bombCountNegs !== 0 && !cell.isMine) {
-                elTd.innerText = bombCountNegs;
-                gGame.shownCount++
-
-            } else if (cell.isMine) {
-                //for each cell.mine in the gBoard elTd.innerText=BOMB
-                showAllBombs(elTd)
-
-            } else if (bombCountNegs === 0) {
-                elTd.innerText = EMPTY
-                gGame.shownCount++
-                var negs = getAllNegs(cellI, cellJ)
-                expandShown(negs)
-
-            }
-        }
-    } else if (event.button === 2) {
-        if (cell.isShown) return
-        addFlag(cell, cellI, cellJ)
-    }
-    checkGameOver()
-}
-
 function checkGameOver() {
     //if all BOMBS is marked and all cell is shown
     var allCells = gLevel.SIZE ** 2
+    console.log('gGame.shownCount:', gGame.shownCount)
+    console.log('gGame.markedCount:', gGame.markedCount)
+    console.log('allCells:', allCells)
 
     if (allCells === gGame.markedCount + gGame.shownCount) {
         gElH1.classList.add("win")
         gElH1.innerText = 'YOU WIN!'
+
+        var elSmileButton = document.querySelector('.smile button')
+        elSmileButton.innerText = WIN
+
+        console.log('elSmile:', elSmileButton.innerText)
         clearInterval(intId_Timer)
         gGame.finish = true;
 
