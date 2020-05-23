@@ -1,6 +1,6 @@
 'use strict'
 const BOMB = '💣';
-const FLAG = '🎌';
+const FLAG = '🚩';
 const EMPTY = "";
 const LIVE = "❤️"
 const NORMAL = "😃";
@@ -34,7 +34,6 @@ function init(size, mines) {
     // localStorage.clear()
     renderTable()
 }
-
 function reset(size, mines) {
     clearInterval(intId_Timer)
     gGame = {
@@ -105,7 +104,6 @@ function safeClick() {
     }, 1000)
 
 }
-
 function cellClicked(elTd, cellI, cellJ, event) {
     if (gGame.finish) return
     //context menu Is disabled
@@ -132,11 +130,23 @@ function cellClicked(elTd, cellI, cellJ, event) {
 
     var bombCountNegs = cell.minesAroundCount
 
-    if (event.button === 0) {
+    if (event.button === 2) {
+        if (cell.isShown) return
+        addFlag(cell, cellI, cellJ)
+    }
+    else if (event.button === 0) {
 
         if (!cell.isMarked && !cell.isShown) {
             cell.isShown = true
             if (bombCountNegs !== 0 && !cell.isMine) {
+
+                if (bombCountNegs === 1) {
+                    elTd.style.color = "blue";
+                } else if (bombCountNegs === 2) {
+                    elTd.style.color = "green";
+                } else if (bombCountNegs === 3 || bombCountNegs === 4) {
+                    elTd.style.color = "red";
+                }
                 elTd.innerText = bombCountNegs;
                 gGame.shownCount++
 
@@ -164,13 +174,26 @@ function cellClicked(elTd, cellI, cellJ, event) {
 
             }
         }
-    } else if (event.button === 2) {
+    }
+    checkGameOver()
+}
+function cellTouch(elTd, cellI, cellJ, event) {
+    console.log('event:', event.type === "contextmenu")
+
+    window.oncontextmenu = (e) => {
+        e.preventDefault();
+    }
+
+    var cell = gBoard[cellI][cellJ]
+
+    if (!gGame.isTimerOn) startTimer()
+
+    if (event.type === "contextmenu") {
         if (cell.isShown) return
         addFlag(cell, cellI, cellJ)
     }
     checkGameOver()
 }
-
 function startTimer() {
 
     gGame.isTimerOn = true
@@ -193,7 +216,6 @@ function startTimer() {
         }
     }, 1000);
 }
-
 function createBoard() {
     var board = [];
     for (var i = 0; i < gLevel.SIZE; i++) {
@@ -210,7 +232,6 @@ function createBoard() {
 
     return board;
 }
-
 function addMines(cellI, cellJ) {
 
     for (let i = 0; i < gLevel.MINES; i++) {
@@ -258,7 +279,8 @@ function renderBoard(mat, selector) {
             var className = 'cell cell' + i + '-' + j;
             strHTML += `<td 
             class="${className}"
-            onmousedown="cellClicked(this , ${i},${j},event)"
+            onmousedown="cellClicked(this , ${i},${j},event)" 
+            oncontextmenu="cellTouch(this , ${i},${j},event)" 
             ><button> ${cell} </button></td>`
         }
         strHTML += '</tr>'
@@ -419,6 +441,13 @@ function expandShown(negs) {
         currCell.isShown = true
         //if the cell has a number show it
         if (currCell.minesAroundCount !== 0) {
+            if (currCell.minesAroundCount === 1) {
+                elTdNeg.style.color = "blue";
+            } else if (currCell.minesAroundCount === 2) {
+                elTdNeg.style.color = "green";
+            } else if (currCell.minesAroundCount === 3 || currCell.minesAroundCount === 4) {
+                elTdNeg.style.color = "red";
+            }
             elTdNeg.innerText = currCell.minesAroundCount
             //if the cell is empty expand it
         } else {

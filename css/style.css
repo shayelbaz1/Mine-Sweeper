@@ -117,18 +117,18 @@ h2 {
 
 table {
     margin: auto;
-    border-color: rgb(23, 38, 152);
-    border: 0px solid rgba(244, 244, 244, 0.365);
-    /* border-radius: 7%; */
+    border-collapse: collapse;
 }
 
 button {
     background-color: lightgrey;
+    margin: -1px;
+    border-width: 0px;
     height: 100%;
     width: 100%;
-    font-size: 20px;
+    font-size: 10px;
+    margin: 0;
     transition: 0.5s;
-    /* border-radius: 7%; */
 }
 
 button:hover {
@@ -137,14 +137,10 @@ button:hover {
 
 td {
     color: ivory;
-    font-size: 20px;
-    background-color: rgb(108, 107, 107);
-    border-color: rgb(23, 38, 152);
+    background-color: rgb(160, 160, 160);
     border: 1px solid rgba(244, 244, 244, 0.365);
-    /* border-radius: 7%; */
-    width: 40px;
-    height: 40px;
-    padding: 0px;
+    width: 27px;
+    height: 27px;
     transition: .5s;
 }
 
@@ -155,6 +151,7 @@ td {
 .points td {
     width: 70px;
     background-color: rgba(255, 255, 255, 0);
+    border: 1px solid rgba(244, 244, 244, 0.365);
 }
 
 .points td:first-child {
