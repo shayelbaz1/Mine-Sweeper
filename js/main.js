@@ -59,7 +59,7 @@ function reset(size, mines) {
     localStorage.setItem(`Guy`, `Guy-12-20`);
 
     gElH1.classList.remove("lose", "win")
-    gElH1.innerText = "Mine Sweeper"
+    gElH1.innerText = "שולה מוקשים"
 
     gElLives.innerText = ""
     gGame.lives.forEach(LIVE => { gElLives.innerText += LIVE })
