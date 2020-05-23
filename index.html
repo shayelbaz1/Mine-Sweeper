@@ -13,17 +13,18 @@
     <div class="white-box">
         <h1>Mine Sweeper</h1>
         <div>
-            <button class="easy button3" onclick="init(4,2)">16</button>
-            <button class="hard button3" onclick="init(8,12)">25</button>
-            <button class="extreme button3" onclick="init(12,30)">36</button>
+            <button class="easy button3" onclick="init(4,2)">Easy</button>
+            <button class="hard button3" onclick="init(8,12)">Medium</button>
+            <button class="extreme button3" onclick="init(12,30)">Hard</button>
         </div>
         <div class="stats-row">
             <h2 class="lives"></h2>
-            <h1 class="smile"></h1>
+            <h2 class="safe-click"><button onclick="safeClick()"></button></h2>
+            <h2 class="smile"></h2>
             <h2 class="timer">000</h2>
         </div>
         <div class="board-container"></div>
-
+        <div class="points"></div>
     </div>
     <script src="js/util.js"></script>
     <script src="js/main.js"></script>

@@ -6,24 +6,33 @@ const LIVE = "❤️"
 const NORMAL = "😃";
 const LOSE = "🤯";
 const WIN = "😎";
+const SAFE = "🛡️";
+const DONE = "⛔";
 
 
 var intId_Timer
 var gElH1 = document.querySelector('h1')
 var gElTimer = document.querySelector('.timer')
 var gElLives = document.querySelector('.lives')
+var gElSafe = document.querySelector('.safe-click button')
 var gElSmile = document.querySelector('.smile')
 // The Model
 // var gIsTimerOn
 var gBoard;
 var gLevel;
 var gGame;
+var g4points = [];
+var g8points = [];
+var g12points = [];
+
 
 
 function init(size, mines) {
     reset(size, mines)
     gBoard = createBoard();
     renderBoard(gBoard, '.board-container');
+    // localStorage.clear()
+    renderTable()
 }
 
 function reset(size, mines) {
@@ -33,22 +42,68 @@ function reset(size, mines) {
         isTimerOn: false,
         shownCount: 0,
         markedCount: 0,
+        safes: [SAFE, SAFE, SAFE],
         secs: 0,
         gMinesLocations: [],
         lives: [LIVE, LIVE, LIVE],
-        finish: false
+        isFinish: false,
+        isLose: false
     }
     gLevel = {
         SIZE: size,
         MINES: mines
     }
 
+    localStorage.setItem(`Shay`, `Shay-4-2`);
+    localStorage.setItem(`Gal`, `Gal-8-10`);
+    localStorage.setItem(`Guy`, `Guy-12-20`);
+
     gElH1.classList.remove("lose", "win")
     gElH1.innerText = "Mine Sweeper"
+
     gElLives.innerText = ""
     gGame.lives.forEach(LIVE => { gElLives.innerText += LIVE })
+
+    gElSafe.innerText = ""
+    gGame.safes.forEach(SAFE => { gElSafe.innerText += SAFE })
+
     gElTimer.innerText = `000`
     gElSmile.innerHTML = `<button onclick="init(${size},${mines})">${NORMAL}</button>`
+}
+//pick a call with !isMine and add bgcolor for 2 sec
+function safeClick() {
+    if (gGame.isFinish) return
+    if (gGame.isLose) return
+    if (gGame.safes.length === 0) return
+
+    gGame.safes.pop();
+
+    gElSafe.innerText = ""
+    gGame.safes.forEach(SAFE => { gElSafe.innerText += SAFE })
+
+    if (gGame.safes.length === 0) {
+        gElSafe.innerText = DONE
+    }
+
+    var emptys = [];
+    for (let i = 0; i < gBoard.length; i++) {
+        for (let j = 0; j < gBoard[i].length; j++) {
+            var cell = gBoard[i][j];
+            if (cell.isMine) continue
+            emptys.push({ i: i, j: j });
+        }
+    }
+    //get random location
+    var randomIdx = getRandomIntInclusive(0, emptys.length - 1);
+    var location = emptys[randomIdx];
+    var elButton = document.querySelector(`.cell${location.i}-${location.j} button`)
+
+    elButton.style.backgroundColor = "lightgreen";
+    // paint it for 2 sec
+    setTimeout(function () {
+        elButton.style.backgroundColor = "lightgrey";
+    }, 1000)
+
 }
 
 function cellClicked(elTd, cellI, cellJ, event) {
@@ -57,12 +112,12 @@ function cellClicked(elTd, cellI, cellJ, event) {
     window.oncontextmenu = (e) => {
         e.preventDefault();
     }
+
     var cell = gBoard[cellI][cellJ]
-    console.log('cell:', cell)
 
     if (!gGame.isTimerOn) startTimer()
 
-    //if 2 only timer start but game not started yet
+    //if right click only timer start but game not started yet
     if (!gGame.isOn) {
         if (event.button === 2) {
             addFlag(cell, cellI, cellJ)
@@ -78,6 +133,7 @@ function cellClicked(elTd, cellI, cellJ, event) {
     var bombCountNegs = cell.minesAroundCount
 
     if (event.button === 0) {
+
         if (!cell.isMarked && !cell.isShown) {
             cell.isShown = true
             if (bombCountNegs !== 0 && !cell.isMine) {
@@ -92,6 +148,7 @@ function cellClicked(elTd, cellI, cellJ, event) {
                 elTd.innerText = BOMB
                 gGame.shownCount++
                 if (gGame.lives.length === 0) {
+                    gGame.isLose = true
                     var elSmileButton = document.querySelector('.smile button')
                     elSmileButton.innerText = LOSE
                     console.log('elSmile:', elSmileButton.innerText)
@@ -103,6 +160,7 @@ function cellClicked(elTd, cellI, cellJ, event) {
                 gGame.shownCount++
                 var negs = getAllNegs(cellI, cellJ)
                 expandShown(negs)
+                // expandShown1(cellI, cellJ)
 
             }
         }
@@ -153,8 +211,6 @@ function createBoard() {
     return board;
 }
 
-
-
 function addMines(cellI, cellJ) {
 
     for (let i = 0; i < gLevel.MINES; i++) {
@@ -178,8 +234,8 @@ function addMine(cellI, cellJ) {
     var randomIdx = getRandomIntInclusive(0, emptys.length - 1);
     var location = emptys[randomIdx];
 
-    var elButton = document.querySelector(`.cell${location.i}-${location.j} button`)
-    elButton.style.backgroundColor = "yellow";
+    // var elButton = document.querySelector(`.cell${location.i}-${location.j} button`)
+    // elButton.style.backgroundColor = "yellow";
 
     gBoard[location.i][location.j].isMine = true;
     gGame.gMinesLocations.push(location)
@@ -189,7 +245,6 @@ function addMine(cellI, cellJ) {
     }
 
 }
-
 function renderBoard(mat, selector) {
     var strHTML = '<table border="0"><tbody>';
     for (var i = 0; i < mat.length; i++) {
@@ -212,7 +267,6 @@ function renderBoard(mat, selector) {
     var elContainer = document.querySelector(selector);
     elContainer.innerHTML = strHTML;
 }
-
 //Run on all the cells and check then set to each sell his Mines Negs Count
 function setMinesNegsCount() {
     for (var i = 0; i < gLevel.SIZE; i++) {
@@ -222,7 +276,6 @@ function setMinesNegsCount() {
         }
     }
 }
-
 function countNeighbors(cellI, cellJ) {
     var neighborsSum = 0;
     for (var i = cellI - 1; i <= cellI + 1; i++) {
@@ -235,7 +288,7 @@ function countNeighbors(cellI, cellJ) {
     }
     return neighborsSum;
 }
-
+//Return an array of all the negs of curr Cell
 function getAllNegs(cellI, cellJ) {
     var negs = [];
     for (var i = cellI - 1; i <= cellI + 1; i++) {
@@ -248,44 +301,137 @@ function getAllNegs(cellI, cellJ) {
     }
     return negs;
 }
+function renderTable() {
+    var strHTML = ""
+    strHTML +=
+        `<table>
+          <tr>
+              <th>Place</th>
+              <th colspan="2">Easy</th>
+              <th colspan="2">Medium</th>
+              <th colspan="2">Hard</th>
+          </tr>
+          <tr>`
 
+    g4points = []
+    g8points = []
+    g12points = []
+    // localStorage.clear()
+    //convert local storage to arrays
+    localToArrays()
+    //render Arrays to tables
+    strHTML = renderArraysToCells(strHTML)
+    strHTML += `</table>`
+
+    var elPoints = document.querySelector('.points')
+    elPoints.innerHTML = strHTML
+}
+function renderArraysToCells(strHTML) {
+    g4points.sort((a, b) => a.secs - b.secs);
+    g8points.sort((a, b) => a.secs - b.secs);
+    g12points.sort((a, b) => a.secs - b.secs);
+    for (var i = 0; i < localStorage.length; i++) {
+        if (!g4points[i] && !g8points[i] && !g12points[i]) continue;
+        strHTML += `<td>${i + 1}</td>`
+        strHTML += updateTd(g4points[i])
+        strHTML += updateTd(g8points[i])
+        strHTML += updateTd(g12points[i])
+        strHTML += `<tr>`
+    }
+    return strHTML
+}
+function updateTd(nameData) {
+    if (!nameData) return `<td></td><td></td>`
+
+    var name = nameData.name
+    var secs = nameData.secs
+
+    name = name.toLowerCase()
+    name = name.charAt(0).toUpperCase() + name.slice(1)
+
+    return `<td>${name}</td><td>${secs}s</td>`
+}
+function localToArrays() {
+    for (var i = 0; i < localStorage.length; i++) {
+        var currKey = localStorage.getItem(localStorage.key(i))
+        var values = currKey.split('-')
+        var data = getItemData(values)
+        pushDataToArrayByLevel(data)
+    }
+}
 function checkGameOver() {
     //if all BOMBS is marked and all cell is shown
     var allCells = gLevel.SIZE ** 2
-    console.log('gGame.shownCount:', gGame.shownCount)
-    console.log('gGame.markedCount:', gGame.markedCount)
-    console.log('allCells:', allCells)
+
+    // setTimeout(updateLocalStorage, 11000)
 
     if (allCells === gGame.markedCount + gGame.shownCount) {
         gElH1.classList.add("win")
-        gElH1.innerText = 'YOU WIN!'
 
-        var elSmileButton = document.querySelector('.smile button')
-        elSmileButton.innerText = WIN
+        renderElementInnerText("h1", "YOU WIN!")
+        renderElementInnerText(".smile button", WIN)
 
-        console.log('elSmile:', elSmileButton.innerText)
+
         clearInterval(intId_Timer)
+        setTimeout(updateLocalStorage, 500)
         gGame.finish = true;
 
-
     }
-
 }
-
+function updateLocalStorage() {
+    var name = prompt('Enter your name')
+    localStorage.setItem(`${name}`, `${name}-${gLevel.SIZE}-${gGame.secs}`);
+    console.log('localStorage:', localStorage)
+    renderTable()
+}
+function pushDataToArrayByLevel(data) {
+    switch (data.level) {
+        case 4:
+            g4points.push(data)
+            break;
+        case 8:
+            g8points.push(data)
+            break;
+        case 12:
+            g12points.push(data)
+            break;
+        default:
+            break;
+    }
+}
+function getItemData(values) {
+    var data = { name: "name", level: "level", secs: 0 };
+    data.name = values[0]
+    data.level = +values[1]
+    data.secs = + values[2]
+    return data
+}
+function renderElementInnerText(selector, innerText) {
+    var element = document.querySelector(selector)
+    element.innerText = innerText
+}
 function expandShown(negs) {
     for (let i = 0; i < negs.length; i++) {
         var currCell = negs[i].cell;
         var elTdNeg = document.querySelector(`.cell${negs[i].i}-${negs[i].j}`)
         if (currCell.isMarked) continue
         if (currCell.isShown) continue
-        if (!currCell.isShown) {
-            currCell.isShown = true
-            elTdNeg.innerText = (currCell.minesAroundCount !== 0) ? currCell.minesAroundCount : EMPTY
-            gGame.shownCount++
+        currCell.isShown = true
+        //if the cell has a number show it
+        if (currCell.minesAroundCount !== 0) {
+            elTdNeg.innerText = currCell.minesAroundCount
+            //if the cell is empty expand it
+        } else {
+            elTdNeg.innerText = EMPTY
+            //get all the negs of the cell in an array
+            var currNegs = getAllNegs(negs[i].i, negs[i].j)
+            //check the current each negs and if it empty check it to
+            expandShown(currNegs)
         }
+        gGame.shownCount++
+
     }
 }
-
 function showAllBombs(elTd) {
     var mines = gGame.gMinesLocations
     for (let i = 0; i < mines.length; i++) {
@@ -297,12 +443,11 @@ function showAllBombs(elTd) {
 
     elTd.style.backgroundColor = "red";
     gElH1.classList.add("lose")
-    gElH1.innerText = 'YOU LOSE'
+    gElH1.innerText = 'GAME OVER'
 
     gGame.finish = true
     clearInterval(intId_Timer)
 }
-
 function addFlag(cell, cellI, cellJ) {
     var elButton = document.querySelector(`.cell${cellI}-${cellJ} button`)
     cell.isMarked = !cell.isMarked
