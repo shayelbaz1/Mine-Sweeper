@@ -89,12 +89,15 @@ function safeClick() {
         for (let j = 0; j < gBoard[i].length; j++) {
             var cell = gBoard[i][j];
             if (cell.isMine) continue
+            if (cell.isShown) continue
             emptys.push({ i: i, j: j });
         }
     }
     //get random location
     var randomIdx = getRandomIntInclusive(0, emptys.length - 1);
     var location = emptys[randomIdx];
+    console.log('emptys:', emptys)
+    console.log('location:', location)
     var elButton = document.querySelector(`.cell${location.i}-${location.j} button`)
 
     elButton.style.backgroundColor = "lightgreen";
@@ -105,22 +108,15 @@ function safeClick() {
 
 }
 function cellClicked(elTd, cellI, cellJ, event) {
+
     if (gGame.finish) return
-    //context menu Is disabled
-    window.oncontextmenu = (e) => {
-        e.preventDefault();
-    }
 
     var cell = gBoard[cellI][cellJ]
 
     if (!gGame.isTimerOn) startTimer()
 
-    //if right click only timer start but game not started yet
     if (!gGame.isOn) {
-        if (event.button === 2) {
-            addFlag(cell, cellI, cellJ)
-            return
-        } else if (event.button === 0) {
+        if (event.button === 0) {
             gGame.isOn = true
             addMines(cellI, cellJ)
             setMinesNegsCount()
@@ -130,11 +126,7 @@ function cellClicked(elTd, cellI, cellJ, event) {
 
     var bombCountNegs = cell.minesAroundCount
 
-    if (event.button === 2) {
-        if (cell.isShown) return
-        addFlag(cell, cellI, cellJ)
-    }
-    else if (event.button === 0) {
+    if (event.button === 0) {
 
         if (!cell.isMarked && !cell.isShown) {
             cell.isShown = true
@@ -147,6 +139,7 @@ function cellClicked(elTd, cellI, cellJ, event) {
                 } else if (bombCountNegs === 3 || bombCountNegs === 4) {
                     elTd.style.color = "red";
                 }
+
                 elTd.innerText = bombCountNegs;
                 gGame.shownCount++
 
@@ -170,23 +163,20 @@ function cellClicked(elTd, cellI, cellJ, event) {
                 gGame.shownCount++
                 var negs = getAllNegs(cellI, cellJ)
                 expandShown(negs)
-                // expandShown1(cellI, cellJ)
-
             }
         }
     }
     checkGameOver()
 }
-function cellTouch(elTd, cellI, cellJ, event) {
-    console.log('event:', event.type === "contextmenu")
-
+function cellRightClick(cellI, cellJ, event) {
     window.oncontextmenu = (e) => {
         e.preventDefault();
     }
 
-    var cell = gBoard[cellI][cellJ]
-
+    if (gGame.finish) return
     if (!gGame.isTimerOn) startTimer()
+
+    var cell = gBoard[cellI][cellJ]
 
     if (event.type === "contextmenu") {
         if (cell.isShown) return
@@ -238,7 +228,6 @@ function addMines(cellI, cellJ) {
         addMine(cellI, cellJ)
     }
 }
-
 function addMine(cellI, cellJ) {
 
     //empty places array
@@ -279,8 +268,8 @@ function renderBoard(mat, selector) {
             var className = 'cell cell' + i + '-' + j;
             strHTML += `<td 
             class="${className}"
+            oncontextmenu="cellRightClick(${i},${j},event)"
             onmousedown="cellClicked(this , ${i},${j},event)" 
-            oncontextmenu="cellTouch(this , ${i},${j},event)" 
             ><button> ${cell} </button></td>`
         }
         strHTML += '</tr>'
